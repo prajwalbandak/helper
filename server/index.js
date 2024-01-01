@@ -5,6 +5,7 @@ import tesseract from "node-tesseract-ocr"
 // const morgan = require('morgan')
 // const multer = require('multer')
 import multer from 'multer'
+import axios from 'axios'
 const app = express()
 const port = 3000
 
@@ -18,6 +19,11 @@ const port = 3000
 // );
 
 // app.use(express.static('./public'))
+
+const configuration = new Configuration({
+  apiKey: process.env.OPENAI_API_KEY,
+  });
+  const openai = new OpenAIApi(configuration);
 const config = {
   lang: "eng", // default
   oem: 3,
@@ -39,6 +45,19 @@ async function main() {
 }
 
 main()
+
+
+app.post('/api/chat', async (req, res) => {
+  const { message } = req.body
+    const completion = await openai.createCompletion({
+        model: "text-davinci-003",
+        prompt: message,
+        max_tokens:200
+      });
+  
+   res.json({ response: completion.data.choices[0].text })
+    });
+
 app.post('/file', upload.single('file-to-upload'), (req, res, next) => {
   console.log("req " + req);
   if (!req.file) {
