@@ -1,34 +1,52 @@
 import express from 'express'
 import tesseract from "node-tesseract-ocr"
+import dotenv from 'dotenv'
 ////import fileUpload from "./routes/fileupload.route.js"
 // const bodyParser = require("body-parser");
 // const morgan = require('morgan')
 // const multer = require('multer')
 import multer from 'multer'
 import axios from 'axios'
-const app = express()
+//const axios = require('axios');
+//const { OpenAIAPI } = require('openai');
+import OpenAIAPI from 'openai';
+const app = express();
 const port = 3000
+dotenv.config();
 
-// app.use(morgan('dev'))
+const apiKey = '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' || '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';
+const openai = new OpenAIAPI({ key: apiKey });
 
+async function callOpenAIChatGPT(prompt) {
+  try {
+    const response = await axios.post(
+      'https://api.openai.com/v1/chat/completions',
+      {
+        model: 'gpt-4',
+        messages: [{ role: 'system', content: 'You are a helpful assistant.' }, { role: 'user', content: prompt }],
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+      }
+    );
 
-// app.use(
-//   bodyParser.urlencoded({
-//     extended: true,
-//   })
-// );
-
-// app.use(express.static('./public'))
-
-const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY,
-  });
-  const openai = new OpenAIApi(configuration);
-const config = {
-  lang: "eng", // default
-  oem: 3,
-  psm: 3,
+    const answer = response.data.choices[0]?.message?.content;
+    console.log('ChatGPT Response:', answer);
+  } catch (error) {
+    console.error('Error calling OpenAI ChatGPT:', error.message);
+  }
 }
+
+// Call the function with the prompt
+callOpenAIChatGPT('Tell me a joke.');
+
+
+app.use(express.static('./public'))
+
+
 const upload = multer({
   dest: './public/uploads/',
   limits:{
@@ -47,16 +65,6 @@ async function main() {
 main()
 
 
-app.post('/api/chat', async (req, res) => {
-  const { message } = req.body
-    const completion = await openai.createCompletion({
-        model: "text-davinci-003",
-        prompt: message,
-        max_tokens:200
-      });
-  
-   res.json({ response: completion.data.choices[0].text })
-    });
 
 app.post('/file', upload.single('file-to-upload'), (req, res, next) => {
   console.log("req " + req);
